@@ -1,10 +1,22 @@
 {
+  "name": "api-gateway",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "gateway.js",
+  "scripts": {
+    "start": "node gateway.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
   "dependencies": {
+    "@fastify/cors": "^11.1.0",
     "@fastify/http-proxy": "^11.3.0",
     "@fastify/jwt": "^10.0.0",
     "@fastify/rate-limit": "^10.3.0",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.1",
-    "express": "^5.1.0",
     "fastify": "^5.5.0",
     "ioredis": "^5.7.0",
     "node-fetch": "^3.3.2",

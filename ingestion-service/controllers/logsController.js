@@ -1,6 +1,15 @@
-import  {pool}  from '../config/db.js';
+import { pool } from '../config/db.js';
+import redis from '../config/redis.js'; 
 
-export const createLog=async(req, res)=> {
+async function classifyPayload(payload) {
+  // Dummy classification logic
+  // Replace with your AI model
+  if (payload.event && payload.event.includes('payment')) return 'payment';
+  if (payload.event && payload.event.includes('deploy')) return 'deployment';
+  return 'general';
+}
+
+export const createLog = async (req, res) => {
   try {
     const { source, headers, payload } = req.body;
 
@@ -13,21 +22,26 @@ export const createLog=async(req, res)=> {
       VALUES ($1, $2, $3)
       RETURNING id, received_at
     `;
-
     const result = await pool.query(query, [source, headers || {}, payload]);
+    const log = result.rows[0];
+
+    const category = await classifyPayload(payload);
+
+    const streamName = `stream_${category}`;
+    await redis.xadd(streamName, '*', 'log_id', log.id, 'source', source, 'payload', JSON.stringify(payload));
 
     res.status(201).json({
       status: 'success',
-      id: result.rows[0].id,
-      received_at: result.rows[0].received_at
+      id: log.id,
+      received_at: log.received_at,
+      category
     });
 
   } catch (err) {
     console.error('Error ingesting log:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
-}
-
+};
 
 export const getLogs = async (req, res) => {
   try {

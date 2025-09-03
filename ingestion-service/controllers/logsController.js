@@ -1,48 +1,62 @@
 import { pool } from '../config/db.js';
 import redis from '../config/redis.js'; 
+import { classifyPayload } from '../services/classifier.js';
 
-async function classifyPayload(payload) {
-  // Dummy classification logic
-  // Replace with your AI model
-  if (payload.event && payload.event.includes('payment')) return 'payment';
-  if (payload.event && payload.event.includes('deploy')) return 'deployment';
-  return 'general';
-}
-
+// controllers/logsController.js - Add webhook handler
 export const createLog = async (req, res) => {
   try {
     const { source, headers, payload } = req.body;
+    const payloadSize = JSON.stringify(payload).length;
 
-    if (!source || !payload) {
-      return res.status(400).json({ error: 'source and payload are required' });
+    // Size validation
+    const maxSize = parseInt(process.env.MAX_PAYLOAD_SIZE) || 1048576; // 1MB
+    if (payloadSize > maxSize) {
+      return res.status(413).json({ error: 'Payload too large' });
     }
 
+    // Store webhook with additional metadata
     const query = `
-      INSERT INTO ingestion.logs (source, headers, payload)
-      VALUES ($1, $2, $3)
+      INSERT INTO ingestion.logs (source, headers, payload, status, size_bytes)
+      VALUES ($1, $2, $3, 'received', $4)
       RETURNING id, received_at
     `;
-    const result = await pool.query(query, [source, headers || {}, payload]);
+    const result = await pool.query(query, [source, headers || {}, payload, payloadSize]);
     const log = result.rows[0];
 
-    const category = await classifyPayload(payload);
+    // Classify payload
+    const category = await classifyPayload(payload, source);
+    
+    // Update with category
+    await pool.query(
+      'UPDATE ingestion.logs SET category = $1 WHERE id = $2',
+      [category, log.id]
+    );
 
-    const streamName = `stream_${category}`;
-    await redis.xadd(streamName, '*', 'log_id', log.id, 'source', source, 'payload', JSON.stringify(payload));
+    // Queue for processing - use single stream for now
+    await redis.xadd(
+      'webhook_events', '*',
+      'log_id', log.id,
+      'source', source,
+      'category', category,
+      'payload', JSON.stringify(payload),
+      'headers', JSON.stringify(headers || {})
+    );
 
-    res.status(201).json({
+    console.log(`Webhook ${log.id} from ${source} classified as ${category}`);
+
+    res.status(200).json({
       status: 'success',
       id: log.id,
       received_at: log.received_at,
-      category
+      category,
+      message: 'Webhook received and queued for processing'
     });
 
   } catch (err) {
-    console.error('Error ingesting log:', err);
+    console.error('Webhook processing error:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
-
 export const getLogs = async (req, res) => {
   try {
     const { page = 1, limit = 20, source, status, search } = req.query;

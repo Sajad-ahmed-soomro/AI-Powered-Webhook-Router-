@@ -3,15 +3,16 @@ import jwt from 'jsonwebtoken';
 const requireAuth = (req, res, next) => {
     try {
         const auth = req.headers.authorization;
-
+        
     
         if (!auth || !auth.startsWith("Bearer ")) {
             return res.status(401).json({ message: "Missing auth token" });
         }
 
         const token = auth.split(" ")[1];
+        console.log(token)
 
-        const payload = jwt.verify(token, process.env.JWT_SECRET);
+        const payload = jwt.verify(token, process.env.SECRET);
 
         req.user = payload;
         return next();

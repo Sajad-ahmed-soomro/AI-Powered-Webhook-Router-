@@ -1,5 +1,6 @@
 
 
+
 # AI Webhook Router 
 
 A scalable microservices-based platform to **ingest, classify, process, and deliver webhooks** from external services like Stripe, GitHub, Zapier, etc.  
@@ -20,8 +21,7 @@ The system ensures reliable processing with retries, logging, monitoring, and se
 ---
 
 ## 🏗️ Architecture
-
-![System Architecture]()  )*
+![WebhookRouterArchitecture drawio](https://github.com/user-attachments/assets/1cac0b2c-57d8-4541-a689-ba7321b0f0bc)  )*
 
 ---
 
@@ -69,7 +69,6 @@ Create a `.env` file at the project root and configure:
 
 ```env
 # Database
-DATABASE_URL=postgres://user:password@localhost:5432/webhooks
 
 # Auth
 JWT_SECRET=supersecret

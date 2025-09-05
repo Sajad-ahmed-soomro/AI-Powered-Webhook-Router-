@@ -10,18 +10,23 @@ import fastifyCors from "@fastify/cors";
 dotenv.config();
 import verifyHmac from "./utils/webhookAuth.js";
 
+
+// API Gateway which reroutes the incoming client requests to respective services 
+
 const logger = pino({ level: process.env.LOG_LEVEL || "info" });
 const app = Fastify({ logger: true });
 
 // --- Plugins ---
 await app.register(fastifyCors, {
-  origin: "http://localhost:3000",
+  origin: process.env.CORS_ORIGIN,// specify here you own client URL e.g https://localhost:3000 or any other url where frontend deployed
   credentials: true
 });
 
 app.register(fastifyJwt, { secret: process.env.JWT_SECRET });
 
 const redis = new Redis(process.env.RATE_LIMIT_REDIS_URL);
+
+// rate limting per minute 100 requests per ip allowed
 app.register(fastifyRateLimit, {
   max: 100,
   timeWindow: "1 minute"
@@ -91,7 +96,7 @@ app.post("/webhook/:source", async (req, reply) => {
   }
 
   try {
-    const res = await fetch("http://localhost:4000/logs", {
+    const res = await fetch(`${process.env.INGESTION_URL}/logs`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...req.headers },
       body: JSON.stringify({ source, headers: req.headers, payload: req.body })

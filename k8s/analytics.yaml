@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: analytics
+  template:
+    metadata:
+      labels:
+        app: analytics
+    spec:
+      containers:
+        - name: analytics
+          image: sajadahmed/analytics-service:latest
+          ports:
+            - containerPort: 3004
+          env:
+            - name: DATABASE_URL
+              value: postgres://postgres:${POSTGRES_PASSWORD}@postgres-svc:5432/microservices
+            - name: REDIS_URL
+              value: redis://redis-svc:6379
+            - name: NODE_ENV
+              value: production
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-svc
+spec:
+  type: ClusterIP
+  selector:
+    app: analytics
+  ports:
+    - port: 80
+      targetPort: 3004

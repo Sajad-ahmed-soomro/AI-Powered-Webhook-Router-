@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: router
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: router
+  template:
+    metadata:
+      labels:
+        app: router
+    spec:
+      containers:
+        - name: router
+          image: sajadahmed/router-service:latest
+          ports:
+            - containerPort: 3005
+          env:
+            - name: DATABASE_URL
+              value: postgres://postgres:${POSTGRES_PASSWORD}@postgres-svc:5432/microservices
+            - name: REDIS_URL
+              value: redis://redis-svc:6379
+            - name: NODE_ENV
+              value: production
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: router-svc
+spec:
+  type: ClusterIP
+  selector:
+    app: router
+  ports:
+    - port: 80
+      targetPort: 3005

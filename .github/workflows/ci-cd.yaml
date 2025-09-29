@@ -1,0 +1,40 @@
+name: Webhook Router CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_USER: ${{ secrets.DOCKER_USER }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Docker Hub Login
+        run: echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USER}" --password-stdin
+
+      # Build & push all microservices
+      - name: Build & Push Images
+        run: |
+          for svc in ingestion api-gateway analytics auth processing router frontend; do
+            docker build -t $DOCKER_USER/$svc-service:latest ./$svc
+            docker push $DOCKER_USER/$svc-service:latest
+          done
+
+      # Deploy to Kubernetes
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: v1.31.0
+      - run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > $HOME/.kube/config
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f k8s/

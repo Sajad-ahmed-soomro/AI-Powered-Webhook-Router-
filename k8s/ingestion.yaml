@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingestion
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ingestion
+  template:
+    metadata:
+      labels:
+        app: ingestion
+    spec:
+      containers:
+        - name: ingestion
+          image: sajadahmed/ingestion-service:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DATABASE_URL
+              value: postgres://postgres:${POSTGRES_PASSWORD}@postgres-svc:5432/microservices
+            - name: REDIS_URL
+              value: redis://redis-svc:6379
+            - name: NODE_ENV
+              value: production
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingestion-svc
+spec:
+  type: ClusterIP
+  selector:
+    app: ingestion
+  ports:
+    - port: 80
+      targetPort: 3000

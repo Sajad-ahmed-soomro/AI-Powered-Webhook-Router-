@@ -59,51 +59,159 @@ The system ensures reliable processing with retries, logging, monitoring, and se
 
 ### 1️⃣ Clone the Repository
 ```bash
-git clone https://github.com/your-username/webhook-platform.git
-cd webhook-platform
+git clone https://github.com/Sajad-ahmed-soomro/AI-Powered-Webhook-Router-.git
+cd AI-Powered-Webhook-Router
 ````
 
 ### 2️⃣ Environment Variables
 
 Create a `.env` file at the project root and configure:
 
-```env
-# Database
 
-# Auth
-JWT_SECRET=supersecret
+```
+### 🔹 **Analytics Service** (`/analytics/.env`)
 
-# Other configs
-PORT=4000
+PORT
+REDIS_URL
+STREAM_KEY
+CONSUMER_GROUP
+CONSUMER_NAME
+PG_HOST
+PG_USER
+PG_PASSWORD
+PG_DATABASE
+PG_PORT
+
+
+### 🔹 API Gateway (`/api-gateway/.env`)
+
+
+PORT
+CORS_ORIGIN
+JWT_SECRET
+REDIS_URL
+RATE_LIMIT_REDIS_URL
+CACHE_REDIS_URL
+LOG_LEVEL
+AUTH_URL
+INGESTION_URL
+ROUTER_URL
+PROCESSING_URL
+LOGS_URL
+REQUEST_TIMEOUT_MS
+ANALYTICS_SERVICE
+STRIPE_SECRET
+GITHUB_SECRET
+
+
+### 🔹 Auth Service (`/auth/.env`)
+
+
+PORT
+PG_HOST
+PG_USER
+PG_PASSWORD
+PG_DATABASE
+PG_PORT
+SECRET
+
+
+### 🔹 Frontend (`/frontend/.env`)
+
+
+NEXT_PUBLIC_API_GATEWAY_BASE_URL
+
+
+### 🔹 Ingestion Service (`/ingestion/.env`)
+
+
+PORT
+PG_HOST
+PG_USER
+PG_PASSWORD
+PG_DATABASE
+PG_PORT
+REDIS_URL
+STREAM_KEY
+CONSUMER_GROUP
+CONSUMER_NAME
+HF_TOKEN
+
+
+### 🔹 Processing Service (`/processing/.env`)
+
+
+PORT
+REDIS_URL
+STREAM_KEY
+CONSUMER_GROUP
+CONSUMER_NAME
+PG_HOST
+PG_USER
+PG_PASSWORD
+PG_DATABASE
+PG_PORT
+
+
+### 🔹 Router Service (`/router/.env`)
+
+
+PORT
+PG_HOST
+PG_USER
+PG_PASSWORD
+PG_DATABASE
+PG_PORT
+REDIS_URL
+STREAM_KEY
+CONSUMER_GROUP
+CONSUMER_NAME
+
+
 ```
 
-### 3️⃣ Start Services with Docker
 
-```bash
-docker-compose up --build
+
+
+## Deployment Steps (Kubernetes + GitHub Actions)
+
+### 1️⃣ Prerequisites
+- Kubernetes cluster ready  
+- kubectl installed and configured  
+- Docker installed and logged in to Docker Hub  
+- GitHub repository secrets:
+  - `DOCKER_USER`
+  - `DOCKER_PASSWORD`
+
+
+
+DATABASE_URL=postgres://postgres:<password>@postgres-svc:5432/microservices
+REDIS_URL=redis://redis-svc:6379
+JWT_SECRET=<your_jwt_secret>
+ANALYTICS_KEY=<your_analytics_key>
+
+
+
+### 3️⃣ Build & Push Docker Images
+GitHub Actions workflow builds and pushes images on every push to `main`.  
+For manual build:
 ```
 
-This will start:
+docker build -t <DOCKER_USER>/ingestion-service:latest ./ingestion
+docker push <DOCKER_USER>/ingestion-service:latest
+```
+repeat for api-gateway, analytics, auth, processing, router, frontend
 
-* PostgreSQL
-* All microservices (ingestion, router, processing, delivery, auth, analytics)
 
-### 4️⃣ Run Database Migrations
+### 4️⃣ Apply Kubernetes Manifests
+```
+kubectl apply -f k8s/
 
-```bash
-npm run migrate   # or use your migration tool (e.g., Knex/Prisma/TypeORM)
+
+
+
 ```
 
-### 5️⃣ Test API Gateway
-
-```bash
-curl -X POST http://localhost:4000/webhooks \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: <your_api_key>" \
-  -d '{"event": "payment.succeeded", "amount": 100}'
-```
-
----
 
 ## 📊 Monitoring & Logs
 
@@ -111,16 +219,8 @@ curl -X POST http://localhost:4000/webhooks \
 * Retry logic managed via `retry_queue`.
 * Analytics service aggregates events for dashboards.
 
----
 
-## 🚀 Roadmap
 
-* [ ] Add Kafka/Redis Streams for async processing
-* [ ] Add Prometheus + Grafana for monitoring
-* [ ] Expose GraphQL API for analytics
-* [ ] Add support for rate-limiting per API key
-
----
 
 ## 🤝 Contributing
 
